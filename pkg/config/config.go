@@ -54,20 +54,21 @@ type ModelParams struct {
 
 // ServiceModel 定义相关结构体
 type ServiceModel struct {
-	Provider        string                   `json:"provider" yaml:"provider"`
-	EmbeddingModels []string                 `json:"embedding_models" yaml:"embedding_models"`
-	EmbeddingLimit  Limit                    `json:"embedding_limit" yaml:"embedding_limit"`
-	Models          []string                 `json:"models" yaml:"models"`
-	ReasoningModels map[string]string        `json:"reasoning_models" yaml:"reasoning_models"`
-	Enabled         bool                     `json:"enabled" yaml:"enabled"`
-	Credentials     map[string]interface{}   `json:"credentials" yaml:"credentials"`
-	CredentialList  []map[string]interface{} `json:"credential_list" yaml:"credential_list"`
-	ServerURL       string                   `json:"server_url" yaml:"server_url"`
-	ModelMap        map[string]string        `json:"model_map" yaml:"model_map"`
-	ModelRedirect   map[string]string        `json:"model_redirect" yaml:"model_redirect"`
-	Limit           Limit                    `json:"limit" yaml:"limit"`
-	UseProxy        *bool                    `json:"use_proxy,omitempty" yaml:"use_proxy,omitempty"`
-	Timeout         int                      `json:"timeout" yaml:"timeout"`
+	Provider          string                   `json:"provider" yaml:"provider"`
+	EmbeddingModels   []string                 `json:"embedding_models" yaml:"embedding_models"`
+	EmbeddingLimit    Limit                    `json:"embedding_limit" yaml:"embedding_limit"`
+	Models            []string                 `json:"models" yaml:"models"`
+	ReasoningModels   map[string]string        `json:"reasoning_models" yaml:"reasoning_models"`
+	Enabled           bool                     `json:"enabled" yaml:"enabled"`
+	Credentials       map[string]interface{}   `json:"credentials" yaml:"credentials"`
+	CredentialList    []map[string]interface{} `json:"credential_list" yaml:"credential_list"`
+	ServerURL         string                   `json:"server_url" yaml:"server_url" mapstructure:"server_url"`
+	ModelMap          map[string]string        `json:"model_map" yaml:"model_map"`
+	ModelRedirect     map[string]string        `json:"model_redirect" yaml:"model_redirect"`
+	Limit             Limit                    `json:"limit" yaml:"limit"`
+	UseProxy          *bool                    `json:"use_proxy,omitempty" yaml:"use_proxy,omitempty"`
+	Timeout           int                      `json:"timeout" yaml:"timeout"`
+	ProviderNamespace string                   `json:"provider_namespace" yaml:"provider_namespace" mapstructure:"provider_namespace"`
 }
 
 type ProxyConf struct {
@@ -112,6 +113,7 @@ type ModelDetails struct {
 	ServiceName  string `json:"service_name" yaml:"service_name"`
 	ServiceModel `json:",inline" yaml:",inline"`
 	ServiceID    string `json:"service_id" yaml:"service_id"`
+	Namespace    string `json:"-" yaml:"-"`
 }
 
 // 创建模型到服务的映射
@@ -143,6 +145,7 @@ func createModelToServiceMap(config Configuration) map[string][]ModelDetails {
 						ServiceName:  serviceName,
 						ServiceModel: model,
 						ServiceID:    uuid.New().String(),
+						Namespace:    model.ProviderNamespace,
 					}
 
 					//modelNameLower := strings.ToLower(modelName)
@@ -310,11 +313,11 @@ func GetAllModelService(modelName string) ([]ModelDetails, error) {
 */
 
 // GetModelService 根据模型名称获取启用的服务和凭证信息
-func GetModelService(modelName string) (*ModelDetails, error) {
+func GetModelService(modelName string, namespace string) (*ModelDetails, error) {
 	if serviceDetails, found := ModelToService[modelName]; found {
 		var enabledServices []ModelDetails
 		for _, sd := range serviceDetails {
-			if sd.Enabled {
+			if sd.Enabled && sd.ProviderNamespace == namespace {
 				enabledServices = append(enabledServices, sd)
 			}
 		}
